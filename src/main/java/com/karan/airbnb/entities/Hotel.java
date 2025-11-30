@@ -31,4 +31,8 @@ public class Hotel extends AuditableBaseEntity {
 
     @Column(nullable = false)
     private Boolean active;
+
+    @ManyToOne
+    @JoinColumn(name = "owner_id")
+    private User owner;
 }
