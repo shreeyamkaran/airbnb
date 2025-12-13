@@ -1,5 +1,6 @@
 package com.karan.airbnb.advices;
 
+import com.karan.airbnb.exceptions.BadRequestException;
 import com.karan.airbnb.exceptions.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,15 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleResourceNotFoundException(ResourceNotFoundException e) {
         ApiError apiError = ApiError.builder()
                 .status(HttpStatus.NOT_FOUND)
+                .message(e.getMessage())
+                .build();
+        return buildErrorResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse<?>> handleBadRequestException(BadRequestException e) {
+        ApiError apiError = ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST)
                 .message(e.getMessage())
                 .build();
         return buildErrorResponseEntity(apiError);
