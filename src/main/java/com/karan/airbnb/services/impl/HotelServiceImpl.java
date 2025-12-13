@@ -1,6 +1,8 @@
 package com.karan.airbnb.services.impl;
 
 import com.karan.airbnb.dtos.HotelDto;
+import com.karan.airbnb.dtos.HotelInfoDto;
+import com.karan.airbnb.dtos.RoomDto;
 import com.karan.airbnb.entities.Hotel;
 import com.karan.airbnb.entities.Room;
 import com.karan.airbnb.exceptions.BadRequestException;
@@ -13,6 +15,7 @@ import com.karan.airbnb.services.RoomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +25,6 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 public class HotelServiceImpl implements HotelService {
-
     private final HotelRepository hotelRepository;
     private final ModelMapper modelMapper;
     private final InventoryService inventoryService;
@@ -87,6 +89,19 @@ public class HotelServiceImpl implements HotelService {
         for (Room room : rooms) {
             inventoryService.initializeRoomForAYear(room);
         }
+    }
+
+    @Override
+    public HotelInfoDto getHotelInfoById(Long hotelId) {
+        Hotel hotelEntity = hotelRepository.findById(hotelId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID: " + hotelId));
+        HotelDto hotelDto = modelMapper.map(hotelEntity, HotelDto.class);
+        List<Room> roomEntities = roomRepository.findByHotelId(hotelId);
+        List<RoomDto> roomDtos = roomEntities.stream().map(room -> modelMapper.map(room, RoomDto.class)).toList();
+        return HotelInfoDto.builder()
+                .hotel(hotelDto)
+                .rooms(roomDtos)
+                .build();
     }
 
 }
