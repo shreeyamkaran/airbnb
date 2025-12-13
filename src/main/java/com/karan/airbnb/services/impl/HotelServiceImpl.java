@@ -9,6 +9,7 @@ import com.karan.airbnb.repositories.HotelRepository;
 import com.karan.airbnb.repositories.RoomRepository;
 import com.karan.airbnb.services.HotelService;
 import com.karan.airbnb.services.InventoryService;
+import com.karan.airbnb.services.RoomService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -26,6 +27,7 @@ public class HotelServiceImpl implements HotelService {
     private final ModelMapper modelMapper;
     private final InventoryService inventoryService;
     private final RoomRepository roomRepository;
+    private final RoomService roomService;
 
     @Override
     public HotelDto createNewHotel(HotelDto hotelDto) {
@@ -59,15 +61,15 @@ public class HotelServiceImpl implements HotelService {
     @Override
     @Transactional
     public void deleteHotelById(Long hotelId) {
-        boolean doesExist = hotelRepository.existsById(hotelId);
-        if(!doesExist) {
-            throw new ResourceNotFoundException("Hotel not found with ID: " + hotelId);
-        }
+        log.info("Deleting a hotel with id: {}", hotelId);
+        Hotel hotel = hotelRepository.findById(hotelId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID: " + hotelId));
         List<Room> rooms = roomRepository.findByHotelId(hotelId);
-        hotelRepository.deleteById(hotelId);
         for (Room room : rooms) {
-            inventoryService.initializeRoomForAYear(room);
+            inventoryService.deleteAllInventories(room);
+            roomService.deleteRoomById(hotelId, room.getId());
         }
+        hotelRepository.deleteById(hotelId);
     }
 
     @Override
