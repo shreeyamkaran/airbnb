@@ -4,8 +4,11 @@ import com.karan.airbnb.exceptions.BadRequestException;
 import com.karan.airbnb.exceptions.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -24,6 +27,18 @@ public class GlobalExceptionHandler {
         ApiError apiError = ApiError.builder()
                 .status(HttpStatus.BAD_REQUEST)
                 .message(e.getMessage())
+                .build();
+        return buildErrorResponseEntity(apiError);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<?>> handleMissingParams(
+            MissingServletRequestParameterException ex
+    ) {
+        ApiError apiError = ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .message("Missing required request parameters")
+                .errors(List.of(ex.getParameterName() + " is required"))
                 .build();
         return buildErrorResponseEntity(apiError);
     }
