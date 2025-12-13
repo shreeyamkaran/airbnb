@@ -41,4 +41,10 @@ public class HotelController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
+    @PatchMapping("/{hotelId}")
+    public ResponseEntity<Void> activateHotel(@PathVariable Long hotelId) {
+        hotelService.activateHotel(hotelId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
 }

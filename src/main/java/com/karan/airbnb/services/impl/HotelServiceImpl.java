@@ -2,13 +2,20 @@ package com.karan.airbnb.services.impl;
 
 import com.karan.airbnb.dtos.HotelDto;
 import com.karan.airbnb.entities.Hotel;
+import com.karan.airbnb.entities.Room;
+import com.karan.airbnb.exceptions.BadRequestException;
 import com.karan.airbnb.exceptions.ResourceNotFoundException;
 import com.karan.airbnb.repositories.HotelRepository;
+import com.karan.airbnb.repositories.RoomRepository;
 import com.karan.airbnb.services.HotelService;
+import com.karan.airbnb.services.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -17,6 +24,8 @@ public class HotelServiceImpl implements HotelService {
 
     private final HotelRepository hotelRepository;
     private final ModelMapper modelMapper;
+    private final InventoryService inventoryService;
+    private final RoomRepository roomRepository;
 
     @Override
     public HotelDto createNewHotel(HotelDto hotelDto) {
@@ -48,13 +57,34 @@ public class HotelServiceImpl implements HotelService {
     }
 
     @Override
+    @Transactional
     public void deleteHotelById(Long hotelId) {
         boolean doesExist = hotelRepository.existsById(hotelId);
         if(!doesExist) {
             throw new ResourceNotFoundException("Hotel not found with ID: " + hotelId);
         }
+        List<Room> rooms = roomRepository.findByHotelId(hotelId);
         hotelRepository.deleteById(hotelId);
-        // TODO: delete the future inventories for this hotel
+        for (Room room : rooms) {
+            inventoryService.initializeRoomForAYear(room);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void activateHotel(Long hotelId) {
+        log.info("Activating a hotel with id: {}", hotelId);
+        Hotel hotel = hotelRepository.findById(hotelId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not found with ID: " + hotelId));
+        if (hotel.getActive()) {
+            throw new BadRequestException("Hotel is already active.");
+        }
+        hotel.setActive(true);
+        // assuming only to be done once
+        List<Room> rooms = roomRepository.findByHotelId(hotelId);
+        for (Room room : rooms) {
+            inventoryService.initializeRoomForAYear(room);
+        }
     }
 
 }
